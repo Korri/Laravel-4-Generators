@@ -45,6 +45,13 @@ class ResourceGeneratorCommand extends Command {
      * @var string
      */
     protected $nameArgument;
+
+    /**
+     * Fields
+     * @var array
+     */
+    protected $fields;
+
     /**
      * Create a new command instance.
      *
@@ -80,7 +87,7 @@ class ResourceGeneratorCommand extends Command {
         // within future commands. I'll save them
         // to temporary files to allow for that.
         $this->cache->fields($this->fields);
-        $this->cache->modelName($this->argument('name'));
+        $this->cache->modelName($this->nameArgument);
 
         $this->generateModel();
         $this->generateController();
@@ -152,11 +159,12 @@ class ResourceGeneratorCommand extends Command {
      */
     protected function generateController()
     {
+        $name = Pluralizer::plural($this->model);
 
         $this->call(
             'generate:controller',
             array(
-                'name' => $this->nameArgument,
+                'name' => "{$name}Controller",
                 '--template' => $this->getControllerTemplatePath()
             )
         );
@@ -177,6 +185,13 @@ class ResourceGeneratorCommand extends Command {
         $views = array('index', 'show', 'create', 'edit');
 
         $this->generator->folders($container);
+
+        // If generating a scaffold, we also need views/layouts/scaffold
+        if (get_called_class() === 'Way\\Generators\\Commands\\ScaffoldGeneratorCommand')
+        {
+            $views[] = 'scaffold';
+            $this->generator->folders($layouts);
+        }
 
         // Let's filter through all of our needed views
         // and create each one.
