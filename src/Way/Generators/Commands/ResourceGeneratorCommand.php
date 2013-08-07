@@ -6,6 +6,7 @@ use Illuminate\Console\Command;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputArgument;
 use Illuminate\Support\Pluralizer;
+use Way\Generators\NameParser;
 
 class MissingFieldsException extends \Exception {}
 
@@ -40,6 +41,11 @@ class ResourceGeneratorCommand extends Command {
     protected $cache;
 
     /**
+     * The name argument
+     * @var string
+     */
+    protected $nameArgument;
+    /**
      * Create a new command instance.
      *
      * @return void
@@ -61,7 +67,7 @@ class ResourceGeneratorCommand extends Command {
     {
         // Scaffolding should always begin with the singular
         // form of the now.
-        $this->model = Pluralizer::singular($this->argument('name'));
+        $this->nameArgument = Pluralizer::singular($this->argument('name'));
 
         $this->fields = $this->option('fields');
 
@@ -74,7 +80,7 @@ class ResourceGeneratorCommand extends Command {
         // within future commands. I'll save them
         // to temporary files to allow for that.
         $this->cache->fields($this->fields);
-        $this->cache->modelName($this->model);
+        $this->cache->modelName($this->argument('name'));
 
         $this->generateModel();
         $this->generateController();
@@ -84,7 +90,7 @@ class ResourceGeneratorCommand extends Command {
 
         $this->generateMisc();
 
-        $this->generator->updateRoutesFile($this->model);
+        $this->generator->updateRoutesFile($this->nameArgument);
         $this->info('Updated ' . app_path() . '/routes.php');
 
         // We're all finished, so we
@@ -133,7 +139,7 @@ class ResourceGeneratorCommand extends Command {
         $this->call(
             'generate:model',
             array(
-                'name' => $this->model,
+                'name' => $this->nameArgument,
                 '--template' => $this->getModelTemplatePath()
             )
         );
@@ -146,12 +152,11 @@ class ResourceGeneratorCommand extends Command {
      */
     protected function generateController()
     {
-        $name = Pluralizer::plural($this->model);
 
         $this->call(
             'generate:controller',
             array(
-                'name' => "{$name}Controller",
+                'name' => $this->nameArgument,
                 '--template' => $this->getControllerTemplatePath()
             )
         );
@@ -168,7 +173,7 @@ class ResourceGeneratorCommand extends Command {
      */
     protected function generateViews()
     {
-        $container = app_path().'/views/' . Pluralizer::plural($this->model);
+        $container = app_path().'/views/' . Pluralizer::plural($this->nameArgument);
         $views = array('index', 'show', 'create', 'edit');
 
         $this->generator->folders($container);
@@ -207,7 +212,7 @@ class ResourceGeneratorCommand extends Command {
      */
     protected function generateMigration()
     {
-        $name = 'create_' . Pluralizer::plural($this->model) . '_table';
+        $name = 'create_' . Pluralizer::plural($this->nameArgument) . '_table';
 
         $this->call(
             'generate:migration',
@@ -223,7 +228,7 @@ class ResourceGeneratorCommand extends Command {
         $this->call(
             'generate:seed',
             array(
-                'name' => Pluralizer::plural(strtolower($this->model))
+                'name' => Pluralizer::plural(strtolower($this->nameArgument))
             )
         );
     }

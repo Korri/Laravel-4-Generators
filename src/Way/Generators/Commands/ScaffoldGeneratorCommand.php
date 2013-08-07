@@ -86,7 +86,7 @@ class ScaffoldGeneratorCommand extends ResourceGeneratorCommand {
         $this->call(
             'generate:test',
             array(
-                'name' => Pluralizer::plural(strtolower($this->model)) . 'Test',
+                'name' => $this->nameArgument,
                 '--template' => $this->getTestTemplatePath(),
                 '--path' => app_path() . '/tests/controllers'
             )
